@@ -6,13 +6,15 @@ from rest_framework import status
 from rest_framework.decorators import api_view ,permission_classes
 from  .serializers import NoteSerializer , ContactSerializer
 from Auth.models import Note , Contact
+import logging
+from .pagnation import  LargeResultsSetPagination
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def getRoutes(request):
     routes =[
         'api/token',
         'api/token/refresh'
-
     ]
 
     return Response(routes)
@@ -30,7 +32,11 @@ def getNote(request):
 @permission_classes([IsAuthenticated])
 def Contact_list(request):
     if request.method == 'GET':
-        contact = Contact.objects.all()
+        user =request.user
+        contact = Contact.objects.filter(userId=user.id)
+        # SELECT * FROM Contact WHERE userId=userId.id
+        # serializer_class = ContactSerializer
+        # pagination_class = LargeResultsSetPagination
         Contact_serializer = ContactSerializer(contact, many=True)
         return JsonResponse(Contact_serializer.data, safe=False)
     elif request.method == 'POST':
