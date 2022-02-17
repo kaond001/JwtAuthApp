@@ -6,8 +6,9 @@ from rest_framework import status
 from rest_framework.decorators import api_view ,permission_classes
 from  .serializers import NoteSerializer , ContactSerializer
 from Auth.models import Note , Contact
-import logging
-from .pagnation import  LargeResultsSetPagination
+from rest_framework.pagination import PageNumberPagination
+# import logging
+# from .pagnation import  LargeResultsSetPagination
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -33,12 +34,14 @@ def getNote(request):
 def Contact_list(request):
     if request.method == 'GET':
         user =request.user
-        contact = Contact.objects.filter(userId=user.id)
-        # SELECT * FROM Contact WHERE userId=userId.id
-        # serializer_class = ContactSerializer
-        # pagination_class = LargeResultsSetPagination
-        Contact_serializer = ContactSerializer(contact, many=True)
-        return JsonResponse(Contact_serializer.data, safe=False)
+        paginator = PageNumberPagination()
+        query_set = Contact.objects.filter(userId=user.id)
+        # contact = Contact.objects.filter(userId=user.id)
+        context = paginator.paginate_queryset(query_set, request)
+        Contact_serializer = ContactSerializer(context, many=True)
+        # ContactSerializer(contact, many=True)
+        return paginator.get_paginated_response(Contact_serializer.data)
+
     elif request.method == 'POST':
         contact_data = JSONParser().parse(request)
         contact_serializer = ContactSerializer(data=contact_data)
@@ -46,3 +49,10 @@ def Contact_list(request):
             contact_serializer.save()
             return JsonResponse(contact_serializer.data, status=status.HTTP_201_CREATED)
         return JsonResponse(contact_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# def my_function_based_list_view(request):
+#     paginator = PageNumberPagination()
+#     query_set = MyModel.objects.all()
+#     context = paginator.paginate_queryset(query_set, request)
+#     serializer = MyModelSerializer(context, many=True)
+#     return paginator.get_paginated_response(serializer.data)
